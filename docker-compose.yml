@@ -1,0 +1,91 @@
+version: "3.8"
+services:
+  mysqldb:
+    image: "mysql:8.0"
+    container_name: mysqldb
+    networks:
+      - skill-mysql
+    ports:
+      - "3307:3307"
+    environment:
+      MYSQL_DATABASE: skill_tracker
+      MYSQL_ROOT_PASSWORD: pass@word1
+  mongodb:
+    image: "mongo:5.0.3"
+    container_name: mongodb
+    networks:
+      - mongo-net
+    ports:
+     - "27017:27017"
+    environment:
+        MONGO_INITDB_DATABASE: skill_tracker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    networks:
+      - app-tier
+    restart: always
+    ports:
+     - "5672:5672"
+     - "15673:15672"
+    hostname: rabbit
+    environment:
+     - RABBITMQ_DEFAULT_USER=guest
+     - RABBITMQ_DEFAULT_PASS=guest
+     - RABBITMQ_DEFAULT_VHOST="/"
+  discovery:
+    image: discovery-service-image
+    container_name: discovery
+    ports:
+     - "8761:8761"
+  gateway:
+    image: gateway-service-image
+    container_name: gateway
+    ports:
+     - "8088:8088"
+    environment:
+     - SPRING_PROFILES_ACTIVE=default
+     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka/
+    depends_on:
+     - discovery
+  command-side:
+    image: command-service-image:latest
+    container_name: cmd-side
+    networks:
+      - skill-mysql
+      - app-tier
+    restart: on-failure
+    depends_on:
+     - mysqldb
+     - rabbitmq
+     - discovery
+    ports:
+      - "9000:9000"
+    environment:
+     - SPRING_PROFILES_ACTIVE=default
+     - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb/skill_tracker?autoReconnect=true&allowPublicKeyRetrieval=true&useSSL=false
+     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka/
+     - SPRING_RABBITMQ_HOST=rabbit
+  query-side:
+    image: query-service-image:latest
+    container_name: qry-side
+    networks:
+     - app-tier
+     - mongo-net
+    restart: on-failure
+    depends_on:
+     - mongodb
+     - rabbitmq
+     - discovery
+    ports:
+     - "9080:9080"
+    environment:
+     - SPRING_PROFILES_ACTIVE=default
+     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka/
+     - MONGO_URL=mongodb://mongodb:27017/skill_tracker
+     - SPRING_RABBITMQ_HOST=rabbit
+
+networks:
+  skill-mysql:
+  app-tier:
+  mongo-net:

@@ -1,0 +1,41 @@
+Reference: https://medium.com/geekculture/installing-rabbitmq-on-windows-4411f5114a84
+
+=========================================
+ERLANG installation
+=========================================
+Install using an administrative user https://github.com/erlang/otp/releases/download/OTP-23.1.5/otp_win64_23.1.5.exe
+
+Set ERLANG_HOME to where you actually put your Erlang installation, e.g. C:\Program Files\erl{version} (full path, we have version=23.1.5). 
+The RabbitMQ batch files expect to execute %ERLANG_HOME%\bin\erl.exe.
+
+Go to Start > Settings > Control Panel > System > Advanced > Environment Variables. 
+Create the system environment variable ERLANG_HOME and set it to the full path of the directory which contains bin\erl.exe.
+
+Restart computer
+
+Check that Erlang is working:
+open cmd and type -> “%ERLANG_HOME%\bin\erl.exe” : should see a Eshell prompt
+
+=========================================
+RabbitMQ Server installation
+=========================================
+Once a supported version of Erlang is installed, download the RabbitMQ installer, rabbitmq-server-{version}.exe and run it. 
+It installs RabbitMQ as a Windows service and starts it using the default configuration.
+
+Go to https://www.rabbitmq.com/install-windows.html and download & run rabbitmq-server-3.10.0.exe
+
+Open new cmd and type:
+cd C:\Program Files\RabbitMQ Server\rabbitmq_server-{version}\sbin
+
+Example -> cd C:\Program Files\RabbitMQ Server\rabbitmq_server-3.8.9\sbin
+Execute command -> rabbitmq-plugins.bat enable rabbitmq_management
+Execute command -> rabbitmq-plugins enable rabbitmq_shovel rabbitmq_shovel_management
+
+Edit C:\Windows\System32\drivers\etc\hosts file. Add to it the following line:
+127.0.0.1 rabbitmq
+
+Once all done open : http://rabbitmq:15672/ for opening the rabbitmq management.
+Username: guest
+Password: guest
+
+You should be able to log into the URL noted above.

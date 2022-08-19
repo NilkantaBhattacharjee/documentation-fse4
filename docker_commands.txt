@@ -1,0 +1,77 @@
+1. Clean + build each project from it's respective directory: gradlew clean build -x test
+
+2. Image creation using gradle:
+=========================================================================
+gradlew bootBuildImage --imageName=discovery-service-image
+gradlew bootBuildImage --imageName=command-service-image
+gradlew bootBuildImage --imageName=query-service-image
+gradlew bootBuildImage --imageName=gateway-service-image
+
+3. docker network create skill-mysql ---> create a network for mysql db
+   docker network create app-tier ---> create a network for rabbit mq
+   docker network create mongo-net --> create a network for mongodb
+   docker network ls --> list networks
+
+4. After creating the images:
+docker-compose -f docker-compose.yml up
+
+Steps to see database(mysql) contents using docker:
+==========================================================
+docker exec -it <container_id> bash
+mysql -u<username> -p<password> --> mysql -uroot -ppass@word1
+show databases;
+use skill_tracker;
+show tables;
+
+Steps to see database(mongodb) contents using docker:
+==========================================================
+docker exec -it mongodb bash
+Login into DB -> mongo 
+Execute command -> show dbs
+Execute command -> show collections
+db.view_profile.find( {} ) -> select query in mongodb
+
+Rabbit MQ:
+====================================================================================
+docker exec -it <rabbit_container_id>  bash -- docker exec -it 6456293c0189 bash
+Create vhost - '/':
+Execute command-> rabbitmqctl add_vhost /
+Set permissions for vhost - '/':
+Execute command-> rabbitmqctl set_permissions -p /  guest ".*" ".*" ".*"
+Read the 1st message off the queue:
+Execute command-> rabbitmqadmin get queue=user.queue requeue=true count=5
+ackmode=ack_requeue_true
+
+Executing a docker image: (NOTE: not required as we are using docker-compose)
+================================================================================
+docker run -d -p 8761:8761 --name discovery-service discovery-service-image
+docker run -d -p 9000:9000 --name command-service command-service-image -- this will not work w/o mysql + rabbit mq images
+docker run -d -p 9080:9080 --name query-service query-service-image -- this will not work w/o mongodb + rabbit mq images
+docker run -d -p 8088:8088 --name gateway-service gateway-service-image
+
+
+docker ps -a ---> to see docker processes
+C:\Users\cogjava404\Documents\workspace>docker ps -a
+CONTAINER ID   IMAGE                          COMMAND                  CREATED             STATUS                        PORTS     NAMES
+e57885df1ba3   command-service-image:latest   "/cnb/process/web"       45 minutes ago      Exited (143) 19 minutes ago             cmd-side
+dff573e1c09c   rabbitmq:3-management          "docker-entrypoint.s…"   About an hour ago   Exited (0) 19 minutes ago               rabbitmq
+79bdcd465229   mysql:8.0                      "docker-entrypoint.s…"   About an hour ago   Exited (0) 19 minutes ago               mysqldb
+a7f1f7f34927   discovery-service-image        "/cnb/process/web"       About an hour ago   Exited (143) 19 minutes ago             discovery
+
+docker container start/stop/restart <container_id> --> to start/stop/restart a docker container
+
+docker images --> list images
+C:\Users\cogjava404>docker images
+REPOSITORY                 TAG        IMAGE ID       CREATED        SIZE
+paketobuildpacks/run       base-cnb   b80cbc6e31f2   13 hours ago   103MB
+paketobuildpacks/builder   base       dd0fa2eb1081   42 years ago   983MB
+discovery-service-docker   latest     670b65d17ee2   42 years ago   269MB
+discovery-service-image    latest     670b65d17ee2   42 years ago   269MB
+
+docker rmi -f <image_id> -- > remove docker image forcefully
+docker rm -f <container_id> -- > remove docker container forcefully
+
+docker-compose down --rmi all --> clear docker cache
+
+docker container logs -f <container_id> --> view the logs for the container
+docker container exec -it <container_id> bash --> inspect if the database named <?> is created
